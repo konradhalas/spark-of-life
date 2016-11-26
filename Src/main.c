@@ -44,7 +44,8 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint8_t received;
+#define MESSAGE_LENGTH 16
+uint8_t received[MESSAGE_LENGTH];
 
 /* USER CODE END PV */
 
@@ -58,12 +59,12 @@ static void MX_USART1_UART_Init(void);
 /* Private function prototypes -----------------------------------------------*/
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == B1_Pin) {
-		static uint8_t data[4];
+		static uint8_t data[MESSAGE_LENGTH];
 		int size;
 		if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_SET) {
-			size = sprintf(data, "UP");
+			size = sprintf(data, "BUTTON UP");
 		} else {
-			size = sprintf(data, "DOWN");
+			size = sprintf(data, "BUTTON DOWN");
 		}
 		HAL_UART_Transmit_IT(&huart1, data, size);
 	}
@@ -71,7 +72,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-	HAL_UART_Receive_IT(&huart1, &received, 1);
+	HAL_UART_Receive_IT(&huart1, received, MESSAGE_LENGTH);
 }
 /* USER CODE END PFP */
 
@@ -99,7 +100,7 @@ int main(void)
   MX_USART1_UART_Init();
 
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_IT(&huart1, &received, 1);
+  HAL_UART_Receive_IT(&huart1, received, MESSAGE_LENGTH);
 
   /* USER CODE END 2 */
 
