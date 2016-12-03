@@ -35,8 +35,11 @@
 #include "stm32f4xx_hal.h"
 
 /* USER CODE BEGIN Includes */
+
 #include "stm32f4xx_hal_uart.h"
 #include "stm32f4xx_hal_adc.h"
+
+#include "Core.h"
 
 /* USER CODE END Includes */
 
@@ -68,11 +71,31 @@ static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
-void send_message(const char *data) {
-	static uint8_t buffor[MESSAGE_LENGTH];
-	int size = sprintf(buffor, data);
-	HAL_UART_Transmit_IT(&huart1, buffor, size);
-}
+class STM32MessgesSender: public MessgesSender {
+	public:
+		STM32MessgesSender() {
+			HAL_UART_Receive_IT(&huart1, received, MESSAGE_LENGTH);
+		}
+
+		void send(Message *message) {
+			uint8_t buffor[MESSAGE_LENGTH];
+			int size = sprintf((char*)buffor, message->serialize().c_str());
+			HAL_UART_Transmit_IT(&huart1, buffor, size);
+		}
+};
+
+class STM32DeviceManager: public DeviceManager {
+	public:
+		STM32DeviceManager(MessgesSender *messagesSender): DeviceManager(messagesSender) {}
+		void toggleLed() {
+			HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+		}
+};
+
+MessgesSender *messagesSender;
+DeviceManager *deviceManager;
+CommandsDispatcher *commandsDispatcher;
+CommandsReceiver *commandsReceiver;
 
 int to_baterry_voltage(uint32_t adcValue) {
 	int mesuredVoltage = (adcValue * VOLTAGE_REFERENCE) / ADC_MAX_VALUE;
@@ -81,26 +104,21 @@ int to_baterry_voltage(uint32_t adcValue) {
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == B1_Pin) {
-		if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_SET) {
-			send_message("BUTTON UP");
-		} else {
-			send_message("BUTTON DOWN");
-		}
+		deviceManager->handleButtonStateChange(HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_SET);
 	}
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+	commandsReceiver->handleReceivedData(received);
 	HAL_UART_Receive_IT(&huart1, received, MESSAGE_LENGTH);
 }
 
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 	uint32_t value = HAL_ADC_GetValue(&hadc1);
-	static char buffor[MESSAGE_LENGTH];
 	int baterryVoltage = to_baterry_voltage(value);
-	sprintf(buffor, "BATERRY %d", baterryVoltage);
-	send_message(buffor);
+	deviceManager->handleBatteryVoltageMesured(baterryVoltage);
 }
+
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -128,7 +146,12 @@ int main(void)
   MX_ADC1_Init();
 
   /* USER CODE BEGIN 2 */
-  HAL_UART_Receive_IT(&huart1, received, MESSAGE_LENGTH);
+
+  messagesSender = new STM32MessgesSender();
+  deviceManager = new STM32DeviceManager(messagesSender);
+  commandsDispatcher = new CommandsDispatcher(deviceManager);
+  commandsReceiver = new CommandsReceiver(commandsDispatcher);
+
   HAL_ADC_Start_IT(&hadc1);
 
   /* USER CODE END 2 */
