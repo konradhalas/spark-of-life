@@ -11,6 +11,6 @@ void DeviceManager::handleButtonStateChange(bool isUp) {
 	messagesSender->send(new ButtonSateMessage(isUp));
 }
 
-void DeviceManager::handleBatteryVoltageMesured(int voltage) {
+void DeviceManager::handleBatteryVoltageMeasured(int voltage) {
 	messagesSender->send(new BatteryMessage(voltage));
 }

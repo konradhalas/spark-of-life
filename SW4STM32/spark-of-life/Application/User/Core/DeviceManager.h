@@ -16,8 +16,10 @@ class DeviceManager {
 		virtual ~DeviceManager() {};
 
 		virtual void toggleLed() = 0;
+		virtual void requestBatteryMeasure() = 0;
+
 		void handleButtonStateChange(bool isUp);
-		void handleBatteryVoltageMesured(int voltage);
+		void handleBatteryVoltageMeasured(int voltage);
 
 	private:
 		MessgesSender *messagesSender;

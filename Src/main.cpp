@@ -90,6 +90,9 @@ class STM32DeviceManager: public DeviceManager {
 		void toggleLed() {
 			HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 		}
+		void requestBatteryMeasure() {
+			HAL_ADC_Start_IT(&hadc1);
+		}
 };
 
 MessgesSender *messagesSender;
@@ -116,7 +119,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 	uint32_t value = HAL_ADC_GetValue(&hadc1);
 	int baterryVoltage = to_baterry_voltage(value);
-	deviceManager->handleBatteryVoltageMesured(baterryVoltage);
+	deviceManager->handleBatteryVoltageMeasured(baterryVoltage);
 }
 
 /* USER CODE END PFP */
@@ -151,8 +154,6 @@ int main(void)
   deviceManager = new STM32DeviceManager(messagesSender);
   commandsDispatcher = new CommandsDispatcher(deviceManager);
   commandsReceiver = new CommandsReceiver(commandsDispatcher);
-
-  HAL_ADC_Start_IT(&hadc1);
 
   /* USER CODE END 2 */
 

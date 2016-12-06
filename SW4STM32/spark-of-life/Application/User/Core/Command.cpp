@@ -10,3 +10,7 @@
 void ToggleCommand::dispatch(CommandsDispatcher *dispatcher) {
 	dispatcher->dispatch(this);
 }
+
+void BatteryReadCommand::dispatch(CommandsDispatcher *dispatcher) {
+	dispatcher->dispatch(this);
+}

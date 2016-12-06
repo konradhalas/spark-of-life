@@ -16,6 +16,6 @@ std::string ButtonSateMessage::serialize() {
 
 std::string BatteryMessage::serialize() {
 	std::ostringstream stringStream;
-	stringStream << "BATERRY " << voltage;
+	stringStream << "BATTERY " << voltage;
 	return stringStream.str();
 }

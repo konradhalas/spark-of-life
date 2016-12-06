@@ -21,4 +21,9 @@ class ToggleCommand: public Command {
 		void dispatch(CommandsDispatcher *dispatcher);
 };
 
+class BatteryReadCommand: public Command {
+	public:
+		void dispatch(CommandsDispatcher *dispatcher);
+};
+
 #endif /* APPLICATION_USER_CORE_COMMAND_H_ */

@@ -11,11 +11,13 @@
 #include "DeviceManager.h"
 
 class ToggleCommand;
+class BatteryReadCommand;
 
 class CommandsDispatcher {
 	public:
 		CommandsDispatcher(DeviceManager *device): deviceManager(device) {}
 		void dispatch(ToggleCommand *command);
+		void dispatch(BatteryReadCommand *command);
 
 	private:
 		DeviceManager *deviceManager;
