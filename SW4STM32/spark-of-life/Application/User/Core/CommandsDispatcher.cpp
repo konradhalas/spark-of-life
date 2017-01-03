@@ -11,6 +11,6 @@ void CommandsDispatcher::dispatch(ToggleCommand *command) {
 	deviceManager->toggleLed();
 }
 
-void CommandsDispatcher::dispatch(BatteryReadCommand *command) {
-	deviceManager->requestBatteryMeasure();
+void CommandsDispatcher::dispatch(ReadSensorsCommand *command) {
+	deviceManager->requestSensorsMeasure();
 }

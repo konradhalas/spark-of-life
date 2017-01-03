@@ -31,6 +31,10 @@
   ******************************************************************************
   */
 /* Includes ------------------------------------------------------------------*/
+#include <cstring>
+#include <queue>
+#include <string>
+
 #include "main.h"
 #include "stm32f4xx_hal.h"
 
@@ -45,19 +49,23 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
 
 UART_HandleTypeDef huart1;
+
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
-#define MESSAGE_LENGTH 16
+#define MESSAGE_LENGTH 20
 #define ADC_MAX_VALUE 4095
 #define VOLTAGE_REFERENCE 3340
 #define DROP_RESISTOR 9990
 #define MESURE_RESISTOR 5070
+#define ADC_CHANNELS 5
 
 uint8_t received[MESSAGE_LENGTH];
+uint16_t adc_data[ADC_CHANNELS];
 
 /* USER CODE END PV */
 
@@ -65,11 +73,36 @@ uint8_t received[MESSAGE_LENGTH];
 void SystemClock_Config(void);
 void Error_Handler(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_ADC1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+
+uint8_t messageBuffor[MESSAGE_LENGTH] = {};
+std::queue <std::string> messages;
+
+
+void sendPendingMessage(UART_HandleTypeDef *huart) {
+	if (messages.size() > 0 && HAL_UART_GetState(huart) != HAL_UART_STATE_BUSY_TX && HAL_UART_GetState(huart) != HAL_UART_STATE_BUSY_TX_RX) {
+		std::memset(messageBuffor, 0, MESSAGE_LENGTH);
+		std::string msg = messages.front() + "\n";
+		int size = sprintf((char*)messageBuffor, msg.c_str());
+		messages.pop();
+		HAL_UART_Transmit_IT(huart, messageBuffor, size);
+	}
+}
+
+void sendMessage(UART_HandleTypeDef *huart, std::string message) {
+	messages.push(message);
+	sendPendingMessage(huart);
+}
+
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+	sendPendingMessage(huart);
+}
 
 class STM32MessgesSender: public MessgesSender {
 	public:
@@ -78,9 +111,7 @@ class STM32MessgesSender: public MessgesSender {
 		}
 
 		void send(Message *message) {
-			uint8_t buffor[MESSAGE_LENGTH];
-			int size = sprintf((char*)buffor, message->serialize().c_str());
-			HAL_UART_Transmit_IT(&huart1, buffor, size);
+			sendMessage(&huart1, message->serialize());
 		}
 };
 
@@ -90,8 +121,9 @@ class STM32DeviceManager: public DeviceManager {
 		void toggleLed() {
 			HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 		}
-		void requestBatteryMeasure() {
-			HAL_ADC_Start_IT(&hadc1);
+
+		void requestSensorsMeasure() {
+			HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_data, ADC_CHANNELS);
 		}
 };
 
@@ -100,8 +132,10 @@ DeviceManager *deviceManager;
 CommandsDispatcher *commandsDispatcher;
 CommandsReceiver *commandsReceiver;
 
-int to_baterry_voltage(uint32_t adcValue) {
-	int mesuredVoltage = (adcValue * VOLTAGE_REFERENCE) / ADC_MAX_VALUE;
+int toBatteryVoltage(uint32_t batteryVoltage, uint32_t referenceVoltage) {
+	uint16_t VREFINT_CAL = *(uint16_t *)0x1FFF7A2A;
+	int vdd = VOLTAGE_REFERENCE * VREFINT_CAL / referenceVoltage;
+	int mesuredVoltage = (batteryVoltage * vdd) / ADC_MAX_VALUE;
 	return (mesuredVoltage * (DROP_RESISTOR + MESURE_RESISTOR)) / MESURE_RESISTOR;
 }
 
@@ -117,9 +151,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
-	uint32_t value = HAL_ADC_GetValue(&hadc1);
-	int baterryVoltage = to_baterry_voltage(value);
-	deviceManager->handleBatteryVoltageMeasured(baterryVoltage);
+	deviceManager->handleBatteryVoltageMeasured(toBatteryVoltage(adc_data[1], adc_data[0]));
+	deviceManager->handleSensorsMeasured(adc_data[2], adc_data[3], adc_data[4]);
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+	if (huart->ErrorCode == HAL_UART_ERROR_ORE) {
+		HAL_UART_Receive_IT(&huart1, received, MESSAGE_LENGTH);
+	}
 }
 
 /* USER CODE END PFP */
@@ -145,6 +184,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART1_UART_Init();
   MX_ADC1_Init();
 
@@ -154,6 +194,8 @@ int main(void)
   deviceManager = new STM32DeviceManager(messagesSender);
   commandsDispatcher = new CommandsDispatcher(deviceManager);
   commandsReceiver = new CommandsReceiver(commandsDispatcher);
+
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_data, ADC_CHANNELS);
 
   /* USER CODE END 2 */
 
@@ -237,22 +279,22 @@ static void MX_ADC1_Init(void)
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
   hadc1.Init.Resolution = ADC_RESOLUTION_12B;
-  hadc1.Init.ScanConvMode = DISABLE;
+  hadc1.Init.ScanConvMode = ENABLE;
   hadc1.Init.ContinuousConvMode = DISABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
-  hadc1.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+  hadc1.Init.NbrOfConversion = ADC_CHANNELS;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
     Error_Handler();
   }
 
-    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
     */
-  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Channel = ADC_CHANNEL_VREFINT;
   sConfig.Rank = 1;
   sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -260,6 +302,41 @@ static void MX_ADC1_Init(void)
     Error_Handler();
   }
 
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Channel = ADC_CHANNEL_0;
+  sConfig.Rank = 2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+    */
+  sConfig.Channel = ADC_CHANNEL_1;
+  sConfig.Rank = 3;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+    */
+  sConfig.Channel = ADC_CHANNEL_4;
+  sConfig.Rank = 4;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
+    */
+  sConfig.Channel = ADC_CHANNEL_8;
+  sConfig.Rank = 5;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USART1 init function */
@@ -278,6 +355,21 @@ static void MX_USART1_UART_Init(void)
   {
     Error_Handler();
   }
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA2_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
 }
 

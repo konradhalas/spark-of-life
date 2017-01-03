@@ -14,3 +14,7 @@ void DeviceManager::handleButtonStateChange(bool isUp) {
 void DeviceManager::handleBatteryVoltageMeasured(int voltage) {
 	messagesSender->send(new BatteryMessage(voltage));
 }
+
+void DeviceManager::handleSensorsMeasured(int s1, int s2, int s3) {
+	messagesSender->send(new SensorsMessage(s1, s2, s3));
+}

@@ -17,8 +17,8 @@ void CommandsReceiver::handleReceivedData(const uint8_t *data) {
 	Command *command = NULL;
 	if (dataAsStr.find_first_of("TOGGLE") == 0) {
 		command = new ToggleCommand();
-	} else if (dataAsStr.find_first_of("BATTERY_READ") == 0) {
-		command = new BatteryReadCommand();
+	} else if (dataAsStr.find_first_of("READ_SENSORS") == 0) {
+		command = new ReadSensorsCommand();
 	}
 	if (command) {
 		command->dispatch(this->dispatcher);

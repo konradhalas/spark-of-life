@@ -21,7 +21,7 @@ class ToggleCommand: public Command {
 		void dispatch(CommandsDispatcher *dispatcher);
 };
 
-class BatteryReadCommand: public Command {
+class ReadSensorsCommand: public Command {
 	public:
 		void dispatch(CommandsDispatcher *dispatcher);
 };

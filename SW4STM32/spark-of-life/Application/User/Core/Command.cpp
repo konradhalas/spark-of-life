@@ -11,6 +11,6 @@ void ToggleCommand::dispatch(CommandsDispatcher *dispatcher) {
 	dispatcher->dispatch(this);
 }
 
-void BatteryReadCommand::dispatch(CommandsDispatcher *dispatcher) {
+void ReadSensorsCommand::dispatch(CommandsDispatcher *dispatcher) {
 	dispatcher->dispatch(this);
 }

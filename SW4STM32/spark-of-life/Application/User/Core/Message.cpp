@@ -19,3 +19,11 @@ std::string BatteryMessage::serialize() {
 	stringStream << "BATTERY " << voltage;
 	return stringStream.str();
 }
+
+
+std::string SensorsMessage::serialize() {
+	std::ostringstream stringStream;
+	stringStream << "SENSORS " << s1 << " " << s2 << " " << s3;
+	std::string val = stringStream.str();
+	return val;
+}

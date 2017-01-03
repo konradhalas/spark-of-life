@@ -34,6 +34,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 
+extern DMA_HandleTypeDef hdma_adc1;
+
 extern void Error_Handler(void);
 /* USER CODE BEGIN 0 */
 
@@ -83,16 +85,40 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     __HAL_RCC_ADC1_CLK_ENABLE();
   
     /**ADC1 GPIO Configuration    
-    PA0-WKUP     ------> ADC1_IN0 
+    PA0-WKUP     ------> ADC1_IN0
+    PA1     ------> ADC1_IN1
+    PA4     ------> ADC1_IN4
+    PB0     ------> ADC1_IN8
     */
-    GPIO_InitStruct.Pin = BATTERY_Pin;
+    GPIO_InitStruct.Pin = BATTERY_Pin|SENSOR_1_Pin|SENSOR_2_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(BATTERY_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    /* Peripheral interrupt init */
-    HAL_NVIC_SetPriority(ADC_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(ADC_IRQn);
+    GPIO_InitStruct.Pin = SENSOR_3_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(SENSOR_3_GPIO_Port, &GPIO_InitStruct);
+
+    /* Peripheral DMA init*/
+
+    hdma_adc1.Instance = DMA2_Stream0;
+    hdma_adc1.Init.Channel = DMA_CHANNEL_0;
+    hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_adc1.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+    hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_adc1.Init.Mode = DMA_CIRCULAR;
+    hdma_adc1.Init.Priority = DMA_PRIORITY_LOW;
+    hdma_adc1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+    if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
+    {
+//      Error_Handler();
+    }
+
+    __HAL_LINKDMA(hadc,DMA_Handle,hdma_adc1);
+
   /* USER CODE BEGIN ADC1_MspInit 1 */
 
   /* USER CODE END ADC1_MspInit 1 */
@@ -116,9 +142,8 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     */
     HAL_GPIO_DeInit(BATTERY_GPIO_Port, BATTERY_Pin);
 
-    /* Peripheral interrupt DeInit*/
-    HAL_NVIC_DisableIRQ(ADC_IRQn);
-
+    /* Peripheral DMA DeInit*/
+    HAL_DMA_DeInit(hadc->DMA_Handle);
   }
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
