@@ -18,3 +18,7 @@ void DeviceManager::handleBatteryVoltageMeasured(int voltage) {
 void DeviceManager::handleSensorsMeasured(int s1, int s2, int s3) {
 	messagesSender->send(new SensorsMessage(s1, s2, s3));
 }
+
+void DeviceManager::handleMotorSpeedMeasured(int motor, int value) {
+	messagesSender->send(new MotorMessage(motor, value));
+}

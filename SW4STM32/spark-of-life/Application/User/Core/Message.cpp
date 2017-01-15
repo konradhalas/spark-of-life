@@ -27,3 +27,10 @@ std::string SensorsMessage::serialize() {
 	std::string val = stringStream.str();
 	return val;
 }
+
+std::string MotorMessage::serialize() {
+	std::ostringstream stringStream;
+	stringStream << "MOTOR " << motor << " " << speed;
+	std::string val = stringStream.str();
+	return val;
+}

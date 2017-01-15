@@ -45,12 +45,38 @@
 #define B1_GPIO_Port GPIOC
 #define BATTERY_Pin GPIO_PIN_0
 #define BATTERY_GPIO_Port GPIOA
+#define SENSOR_1_Pin GPIO_PIN_1
+#define SENSOR_1_GPIO_Port GPIOA
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
+#define MOTOR_1_ENC_2_Pin GPIO_PIN_6
+#define MOTOR_1_ENC_2_GPIO_Port GPIOA
+#define MOTOR_1_ENC_1_Pin GPIO_PIN_7
+#define MOTOR_1_ENC_1_GPIO_Port GPIOA
+#define MOTOR_2_DIR_2_Pin GPIO_PIN_6
+#define MOTOR_2_DIR_2_GPIO_Port GPIOC
+#define MOTOR_2_DIR_1_Pin GPIO_PIN_7
+#define MOTOR_2_DIR_1_GPIO_Port GPIOC
+#define MOTOR_1_DIR_2_Pin GPIO_PIN_8
+#define MOTOR_1_DIR_2_GPIO_Port GPIOC
+#define MOTOR_1_DIR_1_Pin GPIO_PIN_9
+#define MOTOR_1_DIR_1_GPIO_Port GPIOC
+#define MOTOR_1_Pin GPIO_PIN_8
+#define MOTOR_1_GPIO_Port GPIOA
+#define MOTOR_2_Pin GPIO_PIN_11
+#define MOTOR_2_GPIO_Port GPIOA
+#define MOTOR_2_ENC_2_Pin GPIO_PIN_6
+#define MOTOR_2_ENC_2_GPIO_Port GPIOB
+#define MOTOR_2_ENC_1_Pin GPIO_PIN_7
+#define MOTOR_2_ENC_1_GPIO_Port GPIOB
+#define SENSOR_2_Pin GPIO_PIN_4
+#define SENSOR_2_GPIO_Port GPIOA
 #define LD2_Pin GPIO_PIN_5
 #define LD2_GPIO_Port GPIOA
+#define SENSOR_3_Pin GPIO_PIN_0
+#define SENSOR_3_GPIO_Port GPIOB
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
@@ -63,11 +89,11 @@
 
 /**
   * @}
-  */ 
+  */
 
 /**
   * @}
-*/ 
+*/
 
 #endif /* __MAIN_H */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

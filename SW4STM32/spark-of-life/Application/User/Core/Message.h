@@ -45,6 +45,16 @@ private:
 	int s3;
 };
 
+class MotorMessage: public Message {
+public:
+	MotorMessage(int motor, int speed): motor(motor), speed(speed) {};
+	std::string serialize();
+
+private:
+	int motor;
+	int speed;
+};
+
 class MessgesSender {
 public:
 	virtual void send(Message *message) = 0;

@@ -17,10 +17,13 @@ class DeviceManager {
 
 		virtual void toggleLed() = 0;
 		virtual void requestSensorsMeasure() = 0;
+		virtual void setMotorSpeed(int motor, int direction, int speed) = 0;
+		virtual int getMotorSetpointSpeed(int motor) = 0;
 
 		void handleButtonStateChange(bool isUp);
 		void handleBatteryVoltageMeasured(int voltage);
 		void handleSensorsMeasured(int s1, int s2, int s3);
+		void handleMotorSpeedMeasured(int motor, int value);
 
 	private:
 		MessgesSender *messagesSender;
